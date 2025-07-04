@@ -12,7 +12,7 @@ pipeline {
 
     triggers {
         cron('H H 1 1 * 
-')  // Run every 2 minutes
+')  // Run every 1 year
     }
 
     stages {
