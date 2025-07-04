@@ -2,54 +2,47 @@ pipeline {
     agent any
 
     environment {
-        MAVEN_HOME = tool 'Maven'       // Name of Maven configured in Jenkins
-        PATH = "${MAVEN_HOME}/bin:${env.PATH}"
+        BROWSERSTACK_USERNAME = 'chiragpaswan_wQh5KY'
+        BROWSERSTACK_ACCESSKEY = '9zahoZzNwyhD41n1GhsP'
+    }
+
+    tools {
+        maven 'Maven'  // 👈 This should match the name you gave in Global Tool Configuration
+    }
+
+    triggers {
+        cron('H H 1 1 * 
+')  // Run every 2 minutes
     }
 
     stages {
-
-        stage('📥 Clone Code') {
+        stage('Checkout') {
             steps {
-                git 'https://github.com/Gautampaswan/JenkinsDemo.git'
+                checkout scm
             }
         }
 
-        stage('🔧 Build & Install') {
+        stage('Run Tests on BrowserStack') {
             steps {
-                echo 'Cleaning and installing project dependencies...'
-                bat 'mvn clean install'
-            }
-        }
-
-        stage('🧪 Run Tests') {
-            steps {
-                echo 'Executing Selenium/TestNG test cases...'
-                bat 'mvn test'
-            }
-        }
-
-        stage('📊 Generate Allure Report') {
-            steps {
-                echo 'Generating Allure reports...'
-                bat 'mvn allure:report'
-                allure includeProperties: false, jdk: '', results: [[path: 'allure-results']]
+                sh '''
+                    mvn clean test \
+                    -Dbrowserstack=true \
+                    -Dbrowserstack.user=$BROWSERSTACK_USERNAME \
+                    -Dbrowserstack.key=$BROWSERSTACK_ACCESSKEY
+                '''
             }
         }
     }
 
     post {
-        success {
-            echo '🎉 Build Succeeded!'
-            mail to: 'paswangkp506@gmail.com',
-                 subject: "✔️ SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                 body: "✅ Jenkins build succeeded!\n\nCheck console output: ${env.BUILD_URL}"
+        always {
+            echo 'Build finished.'
         }
-
+        success {
+            echo '✅ Test passed!'
+        }
         failure {
-            echo '❌ Build Failed!'
-            mail to: 'paswangkp506@gmail.com',
-                 subject: "❌ FAILURE: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                 body: "⚠️ Jenkins build failed.\n\nCheck console output: ${env.BUILD_URL}"
+            echo '❌ Build failed!'
         }
     }
 }
